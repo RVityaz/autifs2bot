@@ -3,4 +3,4 @@ import config
 
 
 amizone_api.login(config.amizone_id, config.amizone_password)
-amizone_api.getTimeTable()
+print(amizone_api.getTimeTable("Monday"))
