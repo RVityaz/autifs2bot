@@ -28,8 +28,12 @@ def login(amizone_id, password):
         "_Password": password,
     }
     login_response = Session.post('https://student.amizone.net', headers=headers, data=formData)
-    ASPXAUTH = Session.cookies['.ASPXAUTH']
-    return 200 if login_response.url == "https://student.amizone.net/Home" else 500
+    try:
+        ASPXAUTH = Session.cookies['.ASPXAUTH']
+    except KeyError:
+        exit('Could not login to Amizone with provided login and password')
+    if login_response.url != "https://student.amizone.net/Home":
+        exit('Could not login to Amizone with provided login and password')
 
 
 def getTimeTable(day=""):
@@ -42,8 +46,8 @@ def getTimeTable(day=""):
             raise Exception('Given "day" argument should be in range of Monday-Friday')
         days_to_parse = days_of_the_week.split(',') if not day else [day]
         tree = html.fromstring(html_text)
-        # if not tree.xpath('//div[contains(@id, "' +  " ".join(days_to_parse) + '")]'):
-        #     return "Time-table not set".title()
+        if not tree.xpath('//div[' + ' or '.join(['contains(@id, "' + x + '")' for x in days_to_parse]) + ']'):
+            return "Time-table not set".title()
         res = ""
         for day in days_to_parse:
             res += (day.upper() + ' time-table'.title()).strip() + "\n\n"
@@ -75,10 +79,7 @@ def getTimeTable(day=""):
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0",
     }
     response = Session.get('https://student.amizone.net/TimeTable/Home?X-Requested-With=XMLHttpRequest HTTP/1.1', headers=headers)
-    # return parseTimeTable(day, response.text)
-    with open('tmp/test.html', 'r') as f:
-        data = f.read()
-    return parseTimeTable(day, data)
+    return parseTimeTable(day, response.text)
 
 
 if __name__ == "__main__":

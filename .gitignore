@@ -1,5 +1,6 @@
+*.pyc
 __pycache__/
-.idea/
-config.py
-*/__pycache__/
+.idea
 */.idea/
+*/__pycahce__/
+config.py
