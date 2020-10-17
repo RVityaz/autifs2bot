@@ -36,28 +36,32 @@ def getTimeTable(day=""):
     if not ASPXAUTH:
         raise Exception('Login to Amizone first')
     def parseTimeTable(day, html_text):
-        days_of_the_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-        if day and day.capitalize() not in days_of_the_week:
-            raise Exception('"day" argument should be in range of Monday-Friday')
         day = day.capitalize()
+        days_of_the_week = "Monday,Tuesday,Wednesday,Thursday,Friday"
+        if day not in days_of_the_week:
+            raise Exception('Given "day" argument should be in range of Monday-Friday')
+        days_to_parse = days_of_the_week.split(',') if not day else [day]
         tree = html.fromstring(html_text)
-        days_to_parse = days_of_the_week if day == "" else [day]
+        # if not tree.xpath('//div[contains(@id, "' +  " ".join(days_to_parse) + '")]'):
+        #     return "Time-table not set".title()
         res = ""
         for day in days_to_parse:
-            res += (day.upper() + ' time table'.title()).strip() + "\n\n"
-            div = tree.xpath('//div[@id="' + day + '"]')[0]
-            time_table_boxes = div.xpath('//div[contains(@class, "timetable-box")]')
+            res += (day.upper() + ' time-table'.title()).strip() + "\n\n"
+            lectures = tree.xpath('//div[@id="' + day + '"]//div[contains(@class, "timetable-box")]')
+            if not lectures:
+                res += "Time-table not set".title() + "\n"*3
+                continue
             course_names = {
                 "IFP103": "Basic Numeracy Skills",
                 "IFP105": "ICT Skills",
                 "IFP106": "Intensive English",
                 "IFP107": "ARRW",
             }
-            for i in range(len(time_table_boxes)):
-                res += time_table_boxes[i].xpath('//p[contains(@class, "class-time")]')[i].text.replace(' ', '').replace('to', ' - ') + '\n'
-                course_code = time_table_boxes[i].xpath('//p[contains(@class, "course-code")]')[i].text
+            for lecture in lectures:
+                res += lecture.find_class("class-time")[0].text.replace(' ', '').replace('to', ' - ') + '\n'
+                course_code = lecture.find_class("course-code")[0].text
                 res += course_names[course_code] + ' - ' + course_code + '\n'
-                res += re_sub(r'\[[^[]*\]', '', time_table_boxes[i].xpath('//p[contains(@class, "course-teacher")]')[i].text) + '\n'
+                res += re_sub(r'\[[^[]*\]', '', lecture.find_class("course-teacher")[0].text) + '\n'
                 res += '_'*20 + "\n"*3
         return res
 
@@ -71,7 +75,10 @@ def getTimeTable(day=""):
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0",
     }
     response = Session.get('https://student.amizone.net/TimeTable/Home?X-Requested-With=XMLHttpRequest HTTP/1.1', headers=headers)
-    return parseTimeTable(day, response.text)
+    # return parseTimeTable(day, response.text)
+    with open('tmp/test.html', 'r') as f:
+        data = f.read()
+    return parseTimeTable(day, data)
 
 
 if __name__ == "__main__":
